@@ -11,9 +11,16 @@ import java.util.*;
  */
 public class Converter {
 
-    //changing the date format requires changes in the _LOC constants
-    public static final String DATE_FORMAT = "yyyy/MM/dd HH:mm:ss.SSS";
+    //changing the date format positions requires changes in the _LOC constants
 
+    //Format adheres to ISO8601 e.g. 2014-07-23 14:52:30,043
+    public static final String DATE_DELIM = "-";
+    public static final String TIME_DELIM = ":";
+    public static final String MS_DELIM = ",";
+    public static final String SEPARATOR_DELIM = " ";
+    public static final String DATE_FORMAT = "yyyy"+DATE_DELIM+"MM"+DATE_DELIM+"dd"+SEPARATOR_DELIM+"HH"+TIME_DELIM+"mm"+TIME_DELIM+"ss"+MS_DELIM+"SSS";
+
+    //Ordered largest to smallest time segments
     private static final int YEAR_LOC = 0;
     private static final int MONTH_LOC = 1;
     private static final int DAY_LOC = 2;
@@ -55,7 +62,7 @@ public class Converter {
         epoch = epoch % secondL;
         long milliseconds = epoch;
 
-        return String.format("%dy %dd %02d:%02d:%02d.%03d",years, days, hours, minutes, seconds, milliseconds);
+        return String.format("%dy %dd %02d:%02d:%02d,%03d",years, days, hours, minutes, seconds, milliseconds);
 
     }
     //converts a formatted date string to epoch
@@ -97,18 +104,18 @@ public class Converter {
         StringBuilder sb = new StringBuilder();
         //Date values
         sb.append(values[YEAR_LOC]);
-        sb.append("/");
+        sb.append(DATE_DELIM);
         sb.append(values[MONTH_LOC]);
-        sb.append("/");
+        sb.append(DATE_DELIM);
         sb.append(values[DAY_LOC]);
-        sb.append(" ");
+        sb.append(SEPARATOR_DELIM);
         //Time values
         sb.append(values[HOUR_LOC]);
-        sb.append(":");
+        sb.append(TIME_DELIM);
         sb.append(values[MINUTE_LOC]);
-        sb.append(":");
+        sb.append(TIME_DELIM);
         sb.append(values[SECOND_LOC]);
-        sb.append(".");
+        sb.append(MS_DELIM);
         sb.append(values[MILSEC_LOC]);
         return sb.toString();
     }
@@ -119,7 +126,7 @@ public class Converter {
         long[] ia = new long[NUM_TOTAL_FORMAT];
 
         //Split into time and date
-        StringTokenizer st = new StringTokenizer(date," ");
+        StringTokenizer st = new StringTokenizer(date,SEPARATOR_DELIM);
         String dateString;
         String timeString;
         try {
@@ -127,18 +134,18 @@ public class Converter {
         }
         catch(NoSuchElementException nsee) {
             //No string at all. Should cause a format exception later
-            dateString = "0/0/0";
+            dateString = "0"+DATE_DELIM+"0"+DATE_DELIM+"0";
         }
         try {
             timeString = st.nextToken();
         }
         catch(NoSuchElementException nsee) {
             //If time is absent, set to 0 everything
-            timeString = "0:0:0.000";
+            timeString = "0"+TIME_DELIM+"0"+TIME_DELIM+"0"+MS_DELIM+"000";
         }
 
         //Split the date values
-        st = new StringTokenizer(dateString,"/");
+        st = new StringTokenizer(dateString, DATE_DELIM);
         int i = 0;
         for( ; i < NUM_DATE_FORMAT; i++) {
             if(st.hasMoreTokens()) {
@@ -156,7 +163,7 @@ public class Converter {
             }
         }
         //Split the time values
-        st = new StringTokenizer(timeString,":.");
+        st = new StringTokenizer(timeString,TIME_DELIM.concat(MS_DELIM));
         for( ; i-NUM_DATE_FORMAT < NUM_TIME_FORMAT; i++) {
             if(st.hasMoreTokens()) {
                 ia[i] = Long.parseLong(st.nextToken());

@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" build-on-make="true" name="EpochConverter:jar">
-    <output-path>$PROJECT_DIR$/out/artifacts/EpochConverter_jar</output-path>
-    <root id="archive" name="EpochConverter.jar">
-      <element id="module-output" name="Epoch Converter" />
-    </root>
-  </artifact>
-</component>

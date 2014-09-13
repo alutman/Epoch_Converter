@@ -21,8 +21,8 @@ public class UpdaterDistributor {
         UpdaterDistributor.converter = converter;
     }
 
-    public static Updater getNewUpdater(Updater.MODE mode) {
-        return new Updater(modelController,converter, mode);
+    public static Updater getNewUpdater(long startTime) {
+        return new Updater(modelController,converter, startTime);
     }
 
 

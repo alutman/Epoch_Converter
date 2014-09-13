@@ -28,21 +28,8 @@ public class ModelController {
     public long getEpoch() {
         return converter.getEpoch();
     }
-    public void startTimer() {
-        updater = UpdaterDistributor.getNewUpdater(Updater.MODE.TIMER);
-        updater.start();
-    }
-    public void startRealTime() {
-        updater = UpdaterDistributor.getNewUpdater(Updater.MODE.REAL_TIME);
-        updater.start();
-    }
-    public void pauseTimer(long resumeTime) {
-        updater.stopUpdater();
-        this.resumeTime = resumeTime;
-    }
-    public void resumeTimer() {
-        updater = UpdaterDistributor.getNewUpdater(Updater.MODE.RESUME);
-        updater.setResumeTime(resumeTime);
+    public void startTimer(long startPoint) {
+        updater = UpdaterDistributor.getNewUpdater(startPoint);
         updater.start();
     }
     public void stopTimer() {

@@ -14,36 +14,17 @@ public class Updater extends Thread {
     private ModelController modelController;
     private Converter converter;
     private boolean doRun = false;
-    private MODE modeI;
-    private long resumeTime;
+    private long startTime;
 
-    public static enum MODE {
-        REAL_TIME,
-        TIMER,
-        RESUME
-    }
-    protected Updater(ModelController modelController, Converter converter, Updater.MODE mode) {
+    protected Updater(ModelController modelController, Converter converter, long startTime) {
         this.modelController = modelController;
         this.converter = converter;
-        modeI = mode;
-    }
-    public void setResumeTime(long resumeTime) {
-        this.resumeTime = resumeTime;
+        this.startTime = startTime;
     }
     public void stopUpdater() {
         doRun = false;
     }
-    public void realTimeMode() {
-        while(doRun) {
-            try {
-                Thread.sleep(UpdaterDistributor.POLLING_RATE);
-            } catch (InterruptedException e) {
-                System.out.println("InterruptedException: updater.java, line 37. Exiting...");
-                System.exit(1);
-            }
-            modelController.updateGUI(converter.getEpoch()+"");
-        }
-    }
+
     public void timerMode(long offset) {
         long start = System.currentTimeMillis();
         while(doRun) {
@@ -59,16 +40,7 @@ public class Updater extends Thread {
 
     public void run() {
         doRun = true;
-        if(modeI == MODE.REAL_TIME) {
-            realTimeMode();
-
-        }
-        else if(modeI == MODE.TIMER) {
-            timerMode(0);
-        }
-        else if(modeI == MODE.RESUME) {
-            timerMode(resumeTime);
-        }
+        timerMode(startTime);
 
     }
 }

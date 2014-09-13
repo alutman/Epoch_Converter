@@ -22,25 +22,14 @@ public class ButtonController implements ActionListener {
     public void actionPerformed(ActionEvent ae) {
         switch(ae.getActionCommand()){
             case "timer":
-                modelController.startTimer();
+                long start = 0L;
+                try {
+                    start = Long.parseLong(appFrame.getInputText());
+                } catch (NumberFormatException nfe) {
+                    start = 0L;
+                }
+                modelController.startTimer(start);
                 appFrame.setNonThreadButtons(false);
-                break;
-            case "realtime":
-                modelController.startRealTime();
-                appFrame.setNonThreadButtons(false);
-                appFrame.getPause().setEnabled(false);
-                break;
-            case "pause":
-                modelController.pauseTimer(Long.parseLong(appFrame.getInputText()));
-                appFrame.getStop().setEnabled(false);
-                appFrame.getPause().setText("Resume");
-                appFrame.getPause().setActionCommand("resume");
-                break;
-            case "resume":
-                modelController.resumeTimer();
-                appFrame.getStop().setEnabled(true);
-                appFrame.getPause().setText("Pause");
-                appFrame.getPause().setActionCommand("pause");
                 break;
             case "stop":
                 modelController.stopTimer();
@@ -48,6 +37,9 @@ public class ButtonController implements ActionListener {
                 break;
             case "max":
                 modelController.updateGUI(Long.MAX_VALUE + "");
+                break;
+            case "min":
+                modelController.updateGUI(0+"");
                 break;
             case "clear":
                 appFrame.setInputText(null);

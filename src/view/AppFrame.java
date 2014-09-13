@@ -1,5 +1,7 @@
 package view;
 
+import main.Program;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
@@ -26,10 +28,9 @@ public class AppFrame extends JFrame {
     private JButton swap;
     private JButton clear;
     private JButton max;
-    private JButton realTime;
+    private JButton min;
     private JButton timer;
     private JButton stop;
-    private JButton pause;
 
     public AppFrame() {
         //Frame settings
@@ -37,7 +38,9 @@ public class AppFrame extends JFrame {
         this.setResizable(false);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        this.setTitle("Epoch converter");
+        this.setTitle("Epoch Converter v"+ Program.VERSION);
+
+        this.setIconImage(new ImageIcon(getClass().getClassLoader().getResource("image/epoch-white-64.png")).getImage());
 
         makeAll();
         this.setEnabled(true);
@@ -74,21 +77,17 @@ public class AppFrame extends JFrame {
         
         max = new JButton("Max");
         max.setActionCommand("max");
-        
-        realTime = new JButton("Real Time");
-        realTime.setActionCommand("realtime");
-        
+
+        min = new JButton("Min");
+        min.setActionCommand("min");
+
         timer = new JButton("Timer");
         timer.setActionCommand("timer");
-        
+
         stop = new JButton("Stop");
         stop.setActionCommand("stop");
-        
-        stop.setEnabled(false);
-        pause = new JButton("Pause");
-        pause.setActionCommand("pause");
-        
-        pause.setEnabled(false);
+        stop.setVisible(false);
+
     }
     private void makeDescriptions() {
         inputText = new JTextPane();
@@ -138,16 +137,18 @@ public class AppFrame extends JFrame {
         spanP.add(spanOutput);
         this.add(spanP);
         this.add(calculate);
+
         JPanel extraP = new JPanel();
         extraP.setLayout(new BoxLayout(extraP, BoxLayout.X_AXIS));
         extraP.add(today);
         extraP.add(max);
+        extraP.add(min);
+
         extraP.add(new JPanel());
-        extraP.add(realTime);
+
         extraP.add(timer);
-        extraP.add(new JPanel());
-        extraP.add(pause);
         extraP.add(stop);
+
         this.add(extraP);
     }
     public void setActionListener(ActionListener al) {
@@ -156,11 +157,10 @@ public class AppFrame extends JFrame {
         swap.addActionListener(al);
         clear.addActionListener(al);
         max.addActionListener(al);
-        realTime.addActionListener(al);
+        min.addActionListener(al);
         timer.addActionListener(al);
-        stop.addActionListener(al);
-        pause.addActionListener(al);
         input.addActionListener(al);
+        stop.addActionListener(al);
     }
 
     public void setInputText(String text) {
@@ -178,22 +178,15 @@ public class AppFrame extends JFrame {
     public void setSpanOutputText(String text) {
         spanOutput.setText(text);
     }
-    public JButton getPause() {
-        return pause;
-    }
-    public JButton getStop() {
-        return stop;
-    }
     public void setNonThreadButtons(boolean b) {
         calculate.setEnabled(b);
         swap.setEnabled(b);
         today.setEnabled(b);
         clear.setEnabled(b);
         max.setEnabled(b);
-        realTime.setEnabled(b);
-        timer.setEnabled(b);
-        stop.setEnabled(!b);
-        pause.setEnabled(!b);
+        min.setEnabled(b);
+        timer.setVisible(b);
+        stop.setVisible(!b);
     }
 
 }

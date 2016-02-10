@@ -33,13 +33,22 @@ public class Converter {
     private static final int NUM_TIME_FORMAT = 4;
     private static final int NUM_TOTAL_FORMAT = 7;
 
-    //Current epoch value
-    public long getEpoch() {
+    /**
+     * Current epoch value in milliseconds
+     * @return current time in epoch milliseconds
+     */
+    public static long getEpoch() {
         return System.currentTimeMillis();
     }
-    //Displays the epoch in an absolute time format.
-    public String toHumanSpan(long epoch) {
-        if(epoch < 0) {
+
+
+    /**
+     * Convert milliseconds to a human readable time span
+     * @param ms milliseconds to convert
+     * @return human readable time span string in format Xy Xd HH:mm:ss,SSS
+     */
+    public static String msToHumanSpan(long ms) {
+        if(ms < 0) {
             //don't bother if the epoch is invalid
             return null;
         }
@@ -50,57 +59,71 @@ public class Converter {
         long minuteL = 60000L;
         long secondL = 1000L;
 
-        long years = Math.abs(epoch / yearL);
-        epoch = epoch % yearL;
-        long days = Math.abs(epoch / dayL);
-        epoch = epoch % dayL;
-        long hours = Math.abs(epoch / hourL);
-        epoch = epoch % hourL;
-        long minutes = Math.abs(epoch / minuteL);
-        epoch = epoch % minuteL;
-        long seconds = Math.abs(epoch / secondL);
-        epoch = epoch % secondL;
-        long milliseconds = epoch;
+        long years = Math.abs(ms / yearL);
+        ms = ms % yearL;
+        long days = Math.abs(ms / dayL);
+        ms = ms % dayL;
+        long hours = Math.abs(ms / hourL);
+        ms = ms % hourL;
+        long minutes = Math.abs(ms / minuteL);
+        ms = ms % minuteL;
+        long seconds = Math.abs(ms / secondL);
+        ms = ms % secondL;
+        long milliseconds = ms;
 
         return String.format("%dy %dd %02d:%02d:%02d,%03d",years, days, hours, minutes, seconds, milliseconds);
 
     }
-    //converts a formatted date string to epoch
-    public long toEpoch(String date) {
+
+    /**
+     * Convert a formatted date string to epoch milliseconds
+     * @param dateString dateString in format yyyy-MM-dd HH:mm:ss,SSS
+     * @return millisecond epoch representation of that date. Returns negative values on error
+     * @throws ConvertParseException
+     */
+    public static long dateStringToEpoch(String dateString) throws ConvertParseException, ConvertRangeException {
         long epoch;
         try {
             //pull out the numbers. This will force default values for missing elements
-            long[] a = breakUpDateString(date);
+            long[] a = dateStringToArray(dateString);
             //Put it back into a string. Now with default values if nothing was there before
-            date = makeDateString(a);
-            if(!testDateWithinEpoch(date)) return ConvertError.RANGE_ERROR.getValue();
+            dateString = dateArrayToString(a);
+            if(!isDateStringWithinEpoch(dateString)) throw new ConvertRangeException("Date is outside epoch time range");
 
             DateFormat df = new SimpleDateFormat(DATE_FORMAT);
             //Adhere to num days in month, max hour time etc rules
             df.setLenient(false);
-            Date sdf = df.parse(date);
+            Date sdf = df.parse(dateString);
             epoch = sdf.getTime();
-            if(epoch < 0)  return ConvertError.RANGE_ERROR.getValue();
+            if(epoch < 0) throw new ConvertRangeException("Date is outside epoch time range");
         }
         catch(ParseException pe) {
             //Date must be in '01/12/1970 01:00:00' format
             //or invalid month/day number. eg 21/52/2010, 30/02/2010
-            return ConvertError.PARSE_ERROR.getValue();
+            throw new ConvertParseException("Date must be in "+Converter.DATE_FORMAT+" format", pe);
         }
         catch(NumberFormatException nfe) {
             //something else wrong with the format
-            return ConvertError.PARSE_ERROR.getValue();
+            throw new ConvertParseException(nfe.getMessage(), nfe);
         }
         return epoch;
     }
 
-    //Converts an epoch number to a formatted date string
-    public String toHuman(long epoch) {
-        return new SimpleDateFormat(DATE_FORMAT).format(new java.util.Date (epoch));
+    /**
+     * Converts an millisecond epoch number to a formatted date string
+     * @param epoch millisecond representation
+     * @return formatted date string
+     */
+    public static String epochToDateString(long epoch) {
+        return new SimpleDateFormat(DATE_FORMAT).format(new java.util.Date(epoch));
     }
 
-    //Converts an array of date values to a formatted String.
-    private String makeDateString(long[] values) {
+    /**
+     * Converts an array of date values to a formatted String.
+     * @param values array of date values
+     * @return formatted date string from array
+     */
+    private static String dateArrayToString(long[] values) {
         StringBuilder sb = new StringBuilder();
         //Date values
         sb.append(values[YEAR_LOC]);
@@ -120,8 +143,13 @@ public class Converter {
         return sb.toString();
     }
 
-    //Converts a formatted string to an array of date values
-    private long[] breakUpDateString(String date) throws NumberFormatException{
+    /**
+     * Converts a formatted string to an array of date values
+     * @param date string formatted date
+     * @return array representation of that date
+     * @throws NumberFormatException
+     */
+    private static long[] dateStringToArray(String date) throws NumberFormatException{
         //order from biggest to smallest
         long[] ia = new long[NUM_TOTAL_FORMAT];
 
@@ -177,8 +205,13 @@ public class Converter {
         return ia;
     }
 
-    //Compares individual date segments and checks to see if the corresponding date is within the epoch limits
-    private boolean testDateWithinEpoch(String date) throws NumberFormatException{
+    /**
+     * Check if a date string value is within the maximum epoch value
+     * @param dateString formatted date string
+     * @return true if date string is less than the max epoch, otherwise false
+     * @throws NumberFormatException
+     */
+    private static boolean isDateStringWithinEpoch(String dateString) throws NumberFormatException{
         long[] maxA = new long[NUM_TOTAL_FORMAT];
         //maximum values
         maxA[0] = 292278994; //year
@@ -188,18 +221,25 @@ public class Converter {
         maxA[4] = 12; //minute
         maxA[5] = 55; //second
         maxA[6] = 807; //ms
-        long[] timeA = breakUpDateString(date);
+        long[] timeA = dateStringToArray(dateString);
 
         //test max values with date values, returns true if less
         //starts with testing the year, if == then test month etc
         return compare(maxA, timeA, 0);
     }
 
-    //Compares values in two arrays. Recursive method
-    //Does comparisons in the array order. If a value is greater, return false, no more subsequent values are checked
-    //If a value is equal, the next will be checked. If its the last value, return true
-    //If a value is less, return true, no more subsequent values are checked
-    private boolean compare(long[] maxA, long[] timeA, int place) {
+    /**
+     * Compares values in two arrays. Recursive method. Does comparisons in the array order.
+     * Used to compare dates in array format ( [2015, 12, 10, 11, 30, 55, 232] == 2015-12-10 11:30:55,232)
+     * If a value is greater, return false, no more subsequent values are checked
+     * If a value is equal, the next will be checked. If its the last value, return true
+     * If a value is less, return true, no more subsequent values are checked
+     * @param maxA value array which to check against
+     * @param timeA value array to check
+     * @param place which element of the array to check (this should be zero for the first call
+     * @return true if timeA is less than maxA, otherwise false
+     */
+    private static boolean compare(long[] maxA, long[] timeA, int place) {
         //If bigger, return false
         if(timeA[place] > maxA[place]) {
             return false;

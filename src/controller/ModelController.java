@@ -2,32 +2,38 @@ package controller;
 
 import controller.updater.Updater;
 import controller.updater.UpdaterDistributor;
-import model.ConvertError;
+import model.ConvertParseException;
+import model.ConvertRangeException;
 import model.Converter;
 import view.AppFrame;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
 /**
  * Created by alutman on 24/02/14.
  *
- * Uses converter to create results and updates the AppFrame with them. Most of the
- * program's functionality is contained here.
+ * Handles user input and calls Converter to produce appropriate outputs
  *
  */
-public class ModelController {
+public class ModelController implements KeyListener, ActionListener {
 
     private AppFrame appFrame;
-    private Converter converter;
     private Updater updater;
-    private long resumeTime = 0;
 
-    public ModelController(AppFrame af, Converter c) {
+    public ModelController(AppFrame af) {
         appFrame = af;
-        converter = c;
-        UpdaterDistributor.init(this, converter);
+        appFrame.setActionListeners(this);
+        appFrame.setInputKeyListener(this);
+        UpdaterDistributor.init(this);
     }
-    public long getEpoch() {
-        return converter.getEpoch();
+
+    public void setInput(String input) {
+        appFrame.setInputText(input);
     }
+
     public void startTimer(long startPoint) {
         updater = UpdaterDistributor.getNewUpdater(startPoint);
         updater.start();
@@ -35,9 +41,12 @@ public class ModelController {
     public void stopTimer() {
         updater.stopUpdater();
     }
-    public void updateGUI(String in) {
-        //String in = appFrame.getInputText();
-        appFrame.setInputText(in);
+
+    /**
+     * Read the input field and calculate the appropriate outputs
+     */
+    public void updateGUI() {
+        String in = appFrame.getInputText();
         long epoch = -1;
         String date;
         boolean isInt = true;
@@ -62,24 +71,80 @@ public class ModelController {
                 appFrame.setSpanOutputText(null);
             }
             else {
-                date = converter.toHuman(epoch);
+                date = Converter.epochToDateString(epoch);
                 appFrame.setOutputText(date);
-                appFrame.setSpanOutputText(converter.toHumanSpan(epoch));
+                appFrame.setSpanOutputText(Converter.msToHumanSpan(epoch));
             }
         }
         else {
-            epoch = converter.toEpoch(in);
-            if(epoch == ConvertError.PARSE_ERROR.getValue()) {
-
+            try {
+                epoch = Converter.dateStringToEpoch(in);
+                appFrame.setOutputText(epoch+"");
+                appFrame.setSpanOutputText(Converter.msToHumanSpan(epoch));
+            } catch (ConvertParseException e) {
                 appFrame.setOutputText("Date must be in "+Converter.DATE_FORMAT+" format");
                 appFrame.setSpanOutputText(null);
-            }
-            else if(epoch == ConvertError.RANGE_ERROR.getValue()) {
+            } catch (ConvertRangeException e) {
                 appFrame.setOutputText("Date is outside epoch time range");
                 appFrame.setSpanOutputText(null);
             }
-            else appFrame.setOutputText(epoch+"");
-            appFrame.setSpanOutputText(converter.toHumanSpan(epoch));
+        }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        updateGUI();
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent ae) {
+        switch(ae.getActionCommand()){
+            case "timer":
+                long start = 0L;
+                try {
+                    start = Long.parseLong(appFrame.getInputText());
+                } catch (NumberFormatException nfe) {
+                    start = 0L;
+                }
+                startTimer(start);
+                appFrame.setNonThreadButtons(false);
+                break;
+            case "stop":
+                stopTimer();
+                appFrame.setNonThreadButtons(true);
+                break;
+            case "max":
+                appFrame.setInputText(Long.MAX_VALUE + "");
+                updateGUI();
+                break;
+            case "min":
+                appFrame.setInputText(0+"");
+                updateGUI();
+                break;
+            case "clear":
+                appFrame.setInputText(null);
+                appFrame.setOutputText(null);
+                appFrame.setSpanOutputText(null);
+                break;
+            case "swap":
+                String temp = appFrame.getInputText();
+                appFrame.setInputText(appFrame.getOutputText());
+                appFrame.setOutputText(temp);
+                break;
+            case "today":
+                appFrame.setInputText(Converter.getEpoch() + "");
+                updateGUI();
+                break;
         }
     }
 }

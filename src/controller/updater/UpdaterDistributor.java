@@ -13,16 +13,14 @@ import model.Converter;
 public class UpdaterDistributor {
 
     private static ModelController modelController;
-    private static Converter converter;
     public static int POLLING_RATE = 10; /* How often should the updater thread update, Thread.sleep(POLLING_RATE)*/
 
-    public static void init(ModelController modelController, Converter converter) {
+    public static void init(ModelController modelController) {
         UpdaterDistributor.modelController = modelController;
-        UpdaterDistributor.converter = converter;
     }
 
     public static Updater getNewUpdater(long startTime) {
-        return new Updater(modelController,converter, startTime);
+        return new Updater(modelController, startTime);
     }
 
 

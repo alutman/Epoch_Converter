@@ -12,13 +12,11 @@ import model.Converter;
  */
 public class Updater extends Thread {
     private ModelController modelController;
-    private Converter converter;
     private boolean doRun = false;
     private long startTime;
 
-    protected Updater(ModelController modelController, Converter converter, long startTime) {
+    protected Updater(ModelController modelController, long startTime) {
         this.modelController = modelController;
-        this.converter = converter;
         this.startTime = startTime;
     }
     public void stopUpdater() {
@@ -29,12 +27,12 @@ public class Updater extends Thread {
         long start = System.currentTimeMillis();
         while(doRun) {
             try {
-                Thread.sleep(10);
+                Thread.sleep(UpdaterDistributor.POLLING_RATE);
             } catch (InterruptedException e) {
-                System.out.println("InterruptedException: updater.java, line 49. Exiting...");
-                System.exit(1);
+                stopUpdater();
             }
-            modelController.updateGUI(((converter.getEpoch()-start)+offset) + "");
+            modelController.setInput(((Converter.getEpoch()-start)+offset) + "");
+            modelController.updateGUI();
         }
     }
 

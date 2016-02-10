@@ -5,6 +5,7 @@ import main.Program;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyListener;
 import java.lang.*;
 
 /**
@@ -23,7 +24,6 @@ public class AppFrame extends JFrame {
     private JTextPane output;
     private JTextPane spanOutput;
 
-    private JButton calculate;
     private JButton today;
     private JButton swap;
     private JButton clear;
@@ -57,15 +57,13 @@ public class AppFrame extends JFrame {
         input.setActionCommand("input");
         output = new JTextPane();
         output.setEditable(false);
-        output.setBorder(BorderFactory.createMatteBorder(1,1,0,0,Color.BLACK));
+        output.setBorder(BorderFactory.createMatteBorder(1, 1, 0, 0, Color.BLACK));
         spanOutput = new JTextPane();
         spanOutput.setEditable(false);
-        spanOutput.setBorder(BorderFactory.createMatteBorder(1,1,0,0,Color.BLACK));
+        spanOutput.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 0, Color.BLACK));
     }
     private void makeButtons() {
-        calculate = new JButton("Calculate");
-        calculate.setActionCommand("calculate");
-        
+
         today = new JButton("Today");
         today.setActionCommand("today");
         
@@ -94,20 +92,20 @@ public class AppFrame extends JFrame {
         inputText.setFont(new Font("Monospaced", Font.PLAIN,14));
         inputText.setText(String.format("%10s","Input"));
         inputText.setEditable(false);
-        inputText.setMaximumSize(new Dimension(50,50));
+        inputText.setMaximumSize(new Dimension(50, 50));
         inputText.setBackground(new Color(240,240,240));
         outputText = new JTextPane();
         outputText.setFont(new Font("Monospaced", Font.PLAIN,14));
-        outputText.setText(String.format("%10s","Output"));
+        outputText.setText(String.format("%10s", "Output"));
         outputText.setEditable(false);
-        outputText.setMaximumSize(new Dimension(50,50));
+        outputText.setMaximumSize(new Dimension(50, 50));
         outputText.setBackground(new Color(240,240,240));
         spanOutputText = new JTextPane();
         spanOutputText.setFont(new Font("Monospaced", Font.PLAIN,14));
-        spanOutputText.setText(String.format("%10s","Timespan"));
+        spanOutputText.setText(String.format("%10s", "Timespan"));
         spanOutputText.setEditable(false);
-        spanOutputText.setMaximumSize(new Dimension(50,50));
-        spanOutputText.setBackground(new Color(240,240,240));
+        spanOutputText.setMaximumSize(new Dimension(50, 50));
+        spanOutputText.setBackground(new Color(240, 240, 240));
     }
     private void makeLayout() {
         this.setLayout(new GridLayout(6,1));
@@ -136,7 +134,7 @@ public class AppFrame extends JFrame {
         spanP.add(spanOutputText);
         spanP.add(spanOutput);
         this.add(spanP);
-        this.add(calculate);
+        this.add(new JPanel());
 
         JPanel extraP = new JPanel();
         extraP.setLayout(new BoxLayout(extraP, BoxLayout.X_AXIS));
@@ -151,8 +149,7 @@ public class AppFrame extends JFrame {
 
         this.add(extraP);
     }
-    public void setActionListener(ActionListener al) {
-        calculate.addActionListener(al);
+    public void setActionListeners(ActionListener al) {
         today.addActionListener(al);
         swap.addActionListener(al);
         clear.addActionListener(al);
@@ -161,6 +158,9 @@ public class AppFrame extends JFrame {
         timer.addActionListener(al);
         input.addActionListener(al);
         stop.addActionListener(al);
+    }
+    public void setInputKeyListener(KeyListener kl) {
+        input.addKeyListener(kl);
     }
 
     public void setInputText(String text) {
@@ -179,7 +179,6 @@ public class AppFrame extends JFrame {
         spanOutput.setText(text);
     }
     public void setNonThreadButtons(boolean b) {
-        calculate.setEnabled(b);
         swap.setEnabled(b);
         today.setEnabled(b);
         clear.setEnabled(b);

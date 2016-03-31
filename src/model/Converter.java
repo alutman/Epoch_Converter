@@ -55,12 +55,6 @@ public class Converter {
     public static String msToHumanSpan(long ms) {
         boolean neg = false;
 
-        //Check if negative and remove the sign
-        if (ms < 0) {
-            neg = true;
-            ms = Math.abs(ms);
-        }
-
         //Time measures in milliseconds
         long yearL = 31536000000L;
         long dayL = 86400000L;
@@ -78,7 +72,7 @@ public class Converter {
         ms = ms % minuteL;
         long seconds = Math.abs(ms / secondL);
         ms = ms % secondL;
-        long milliseconds = ms;
+        long milliseconds = Math.abs(ms);
 
         String span = String.format("%dy %dd %02d:%02d:%02d,%03d",years, days, hours, minutes, seconds, milliseconds);
 

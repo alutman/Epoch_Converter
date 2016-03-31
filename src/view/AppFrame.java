@@ -3,6 +3,7 @@ package view;
 import main.Program;
 
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicBorders;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyListener;
@@ -35,6 +36,9 @@ public class AppFrame extends JFrame {
     private JButton timer;
     private JButton stop;
 
+    private Color JAVA_DEFAULT_GRAY = new Color(240,240,240);
+    private Font FONT = new Font("Monospaced", Font.PLAIN,14);
+
     public AppFrame() {
         //Frame settings
         this.setSize(500,200);
@@ -54,14 +58,30 @@ public class AppFrame extends JFrame {
         makeButtons();
         makeDescriptions();
         makeLayout();
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        } catch (UnsupportedLookAndFeelException e) {
+            e.printStackTrace();
+        }
     }
     private void makeInputOutput() {
         input = new JTextField();
+        input.setFont(FONT);
         input.setActionCommand("input");
+
         output = new JTextPane();
+        output.setFont(FONT);
         output.setEditable(false);
         output.setBorder(BorderFactory.createMatteBorder(1, 1, 0, 0, Color.BLACK));
+
         spanOutput = new JTextPane();
+        spanOutput.setFont(FONT);
         spanOutput.setEditable(false);
         spanOutput.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 0, Color.BLACK));
 
@@ -97,25 +117,28 @@ public class AppFrame extends JFrame {
         stop.setVisible(false);
 
     }
+
+
+
     private void makeDescriptions() {
         inputText = new JTextPane();
-        inputText.setFont(new Font("Monospaced", Font.PLAIN,14));
+        inputText.setFont(FONT);
         inputText.setText(String.format("%10s","Input"));
         inputText.setEditable(false);
         inputText.setMaximumSize(new Dimension(50, 50));
-        inputText.setBackground(new Color(240,240,240));
+        inputText.setBackground(JAVA_DEFAULT_GRAY);
         outputText = new JTextPane();
-        outputText.setFont(new Font("Monospaced", Font.PLAIN,14));
+        outputText.setFont(FONT);
         outputText.setText(String.format("%10s", "Output"));
         outputText.setEditable(false);
         outputText.setMaximumSize(new Dimension(50, 50));
-        outputText.setBackground(new Color(240,240,240));
+        outputText.setBackground(JAVA_DEFAULT_GRAY);
         spanOutputText = new JTextPane();
-        spanOutputText.setFont(new Font("Monospaced", Font.PLAIN,14));
+        spanOutputText.setFont(FONT);
         spanOutputText.setText(String.format("%10s", "Timespan"));
         spanOutputText.setEditable(false);
         spanOutputText.setMaximumSize(new Dimension(50, 50));
-        spanOutputText.setBackground(new Color(240, 240, 240));
+        spanOutputText.setBackground(JAVA_DEFAULT_GRAY);
     }
     private void makeLayout() {
         this.setLayout(new GridLayout(6,1));
@@ -127,6 +150,7 @@ public class AppFrame extends JFrame {
         this.add(inputP);
 
         JPanel swapP = new JPanel();
+        swapP.setBorder(BorderFactory.createEmptyBorder(2, 5, 5, 2));
         swapP.setLayout(new BoxLayout(swapP, BoxLayout.X_AXIS));
         swapP.add(new JPanel());
         swapP.add(bcEra);
@@ -151,6 +175,7 @@ public class AppFrame extends JFrame {
         this.add(new JPanel());
 
         JPanel extraP = new JPanel();
+        extraP.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
         extraP.setLayout(new BoxLayout(extraP, BoxLayout.X_AXIS));
         extraP.add(today);
         extraP.add(max);

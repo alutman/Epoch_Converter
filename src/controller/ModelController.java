@@ -11,6 +11,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.GregorianCalendar;
 
 /**
  * Created by alutman on 24/02/14.
@@ -34,12 +35,26 @@ public class ModelController implements KeyListener, ActionListener {
         appFrame.setInputText(input);
     }
 
-    public void startTimer(long startPoint) {
+    private void startTimer(long startPoint) {
         updater = UpdaterDistributor.getNewUpdater(startPoint);
         updater.start();
     }
-    public void stopTimer() {
+    private void stopTimer() {
         updater.stopUpdater();
+    }
+
+
+    private int getEra() {
+        return appFrame.isBCSelected() ? GregorianCalendar.BC : GregorianCalendar.AD;
+    }
+
+    private void setEra(int eraInt) {
+        if(eraInt == GregorianCalendar.BC) {
+            appFrame.setBCSelected(true);
+        }
+        else {
+            appFrame.setBCSelected(false);
+        }
     }
 
     /**
@@ -56,7 +71,7 @@ public class ModelController implements KeyListener, ActionListener {
         }
         catch (NumberFormatException e){
             //Not a valid long
-            if(in.matches("^\\d+$")){
+            if(in.matches("^-?\\d+$")){
                 //is still a number, just too large
                 appFrame.setOutputText("Epoch cannot be greater than 2^(63)-1");
                 appFrame.setSpanOutputText(null);
@@ -66,19 +81,16 @@ public class ModelController implements KeyListener, ActionListener {
             isInt = false;
         }
         if(isInt) {
-            if(epoch <  0) {
-                appFrame.setOutputText("Epoch must be positive");
-                appFrame.setSpanOutputText(null);
-            }
-            else {
-                date = Converter.epochToDateString(epoch);
-                appFrame.setOutputText(date);
-                appFrame.setSpanOutputText(Converter.msToHumanSpan(epoch));
-            }
+            appFrame.enableBCSelection(false);
+            date = Converter.epochToDateString(epoch);
+            setEra(Converter.getEraFromEpoch(epoch));
+            appFrame.setOutputText(date);
+            appFrame.setSpanOutputText(Converter.msToHumanSpan(epoch));
         }
         else {
             try {
-                epoch = Converter.dateStringToEpoch(in);
+                appFrame.enableBCSelection(true);
+                epoch = Converter.dateStringToEpoch(in, getEra());
                 appFrame.setOutputText(epoch+"");
                 appFrame.setSpanOutputText(Converter.msToHumanSpan(epoch));
             } catch (ConvertParseException e) {
@@ -128,6 +140,10 @@ public class ModelController implements KeyListener, ActionListener {
                 updateGUI();
                 break;
             case "min":
+                appFrame.setInputText(Long.MIN_VALUE + "");
+                updateGUI();
+                break;
+            case "zero":
                 appFrame.setInputText(0+"");
                 updateGUI();
                 break;
@@ -137,12 +153,13 @@ public class ModelController implements KeyListener, ActionListener {
                 appFrame.setSpanOutputText(null);
                 break;
             case "swap":
-                String temp = appFrame.getInputText();
                 appFrame.setInputText(appFrame.getOutputText());
-                appFrame.setOutputText(temp);
+                updateGUI();
                 break;
             case "today":
                 appFrame.setInputText(Converter.getEpoch() + "");
+                updateGUI();
+            case "era":
                 updateGUI();
                 break;
         }

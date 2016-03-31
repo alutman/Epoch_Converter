@@ -48,9 +48,11 @@ public class Converter {
      * @return human readable time span string in format Xy Xd HH:mm:ss,SSS
      */
     public static String msToHumanSpan(long ms) {
-        if(ms < 0) {
-            //don't bother if the epoch is invalid
-            return null;
+        boolean neg = false;
+        if (ms < 0) {
+            neg = true;
+            ms = Math.abs(ms);
+
         }
         //Time measures in milliseconds
         long yearL = 31536000000L;
@@ -71,31 +73,44 @@ public class Converter {
         ms = ms % secondL;
         long milliseconds = ms;
 
-        return String.format("%dy %dd %02d:%02d:%02d,%03d",years, days, hours, minutes, seconds, milliseconds);
-
+        String span = String.format("%dy %dd %02d:%02d:%02d,%03d",years, days, hours, minutes, seconds, milliseconds);
+        if(neg) {
+            span = "-"+span;
+        }
+        return span;
     }
 
+
+    /* Used for Era calculations */
+    private static Calendar gCal = new GregorianCalendar();
+
+    /* Overloaded with default CE era (1)*/
+    public static long dateStringToEpoch(String dateString) throws ConvertParseException, ConvertRangeException {
+        return dateStringToEpoch(dateString, 1);
+    }
     /**
      * Convert a formatted date string to epoch milliseconds
      * @param dateString dateString in format yyyy-MM-dd HH:mm:ss,SSS
+     * @param era time era (BCE, CE) as represented by int in
      * @return millisecond epoch representation of that date. Returns negative values on error
      * @throws ConvertParseException
      */
-    public static long dateStringToEpoch(String dateString) throws ConvertParseException, ConvertRangeException {
+    public static long dateStringToEpoch(String dateString, int era) throws ConvertParseException, ConvertRangeException {
         long epoch;
         try {
             //pull out the numbers. This will force default values for missing elements
             long[] a = dateStringToArray(dateString);
             //Put it back into a string. Now with default values if nothing was there before
             dateString = dateArrayToString(a);
-            if(!isDateStringWithinEpoch(dateString)) throw new ConvertRangeException("Date is outside epoch time range");
+            if(!isDateStringWithinEpoch(dateString, era)) throw new ConvertRangeException("Date is outside epoch time range");
 
             DateFormat df = new SimpleDateFormat(DATE_FORMAT);
             //Adhere to num days in month, max hour time etc rules
             df.setLenient(false);
             Date sdf = df.parse(dateString);
-            epoch = sdf.getTime();
-            if(epoch < 0) throw new ConvertRangeException("Date is outside epoch time range");
+            gCal.setTime(sdf);
+            gCal.set(Calendar.ERA, era);
+            epoch = gCal.getTimeInMillis();
         }
         catch(ParseException pe) {
             //Date must be in '01/12/1970 01:00:00' format
@@ -116,6 +131,11 @@ public class Converter {
      */
     public static String epochToDateString(long epoch) {
         return new SimpleDateFormat(DATE_FORMAT).format(new java.util.Date(epoch));
+    }
+    public static int getEraFromEpoch(long epoch) {
+        Date d = new java.util.Date(epoch);
+        gCal.setTime(d);
+        return gCal.get(Calendar.ERA);
     }
 
     /**
@@ -211,22 +231,41 @@ public class Converter {
      * @return true if date string is less than the max epoch, otherwise false
      * @throws NumberFormatException
      */
-    private static boolean isDateStringWithinEpoch(String dateString) throws NumberFormatException{
+    private static boolean isDateStringWithinEpoch(String dateString, int era) throws NumberFormatException {
         long[] maxA = new long[NUM_TOTAL_FORMAT];
-        //maximum values
-        maxA[0] = 292278994; //year
-        maxA[1] = 8; //month
-        maxA[2] = 17; //day
-        maxA[3] = 17; //hour
-        maxA[4] = 12; //minute
-        maxA[5] = 55; //second
-        maxA[6] = 807; //ms
         long[] timeA = dateStringToArray(dateString);
+        if (era == GregorianCalendar.BC) {
+            //minimum values
+            //292269055-12-03 02:47:04,192
+            maxA[0] = 292269055; //year
+            maxA[1] = 12; //month
+            maxA[2] = 3; //day
+            maxA[3] = 2; //hour
+            maxA[4] = 47; //minute
+            maxA[5] = 4; //second
+            maxA[6] = 192; //ms
+            if(timeA[0] == maxA[0]) {
+                return compare(maxA, timeA, 1, true);
+            }
+            else return timeA[0] < maxA[0];
+        } else {
+            //maximum values
+            //292278994-08-17 17:12:55,807
+            maxA[0] = 292278994; //year
+            maxA[1] = 8; //month
+            maxA[2] = 17; //day
+            maxA[3] = 17; //hour
+            maxA[4] = 12; //minute
+            maxA[5] = 55; //second
+            maxA[6] = 807; //ms
+            return compare(maxA, timeA, 0, false);
+        }
+
 
         //test max values with date values, returns true if less
         //starts with testing the year, if == then test month etc
-        return compare(maxA, timeA, 0);
     }
+
 
     /**
      * Compares values in two arrays. Recursive method. Does comparisons in the array order.
@@ -239,18 +278,26 @@ public class Converter {
      * @param place which element of the array to check (this should be zero for the first call
      * @return true if timeA is less than maxA, otherwise false
      */
-    private static boolean compare(long[] maxA, long[] timeA, int place) {
-        //If bigger, return false
-        if(timeA[place] > maxA[place]) {
-            return false;
+    private static boolean compare(long[] maxA, long[] timeA, int place, boolean invert) {
+        if(invert) {
+            if(timeA[place] < maxA[place]) {
+                return false;
+            }
         }
+        else {
+            //If bigger, return false
+            if(timeA[place] > maxA[place]) {
+                return false;
+            }
+        }
+
         //if equal, check the next date segment.
-        else if(timeA[place] == maxA[place]) {
+        if(timeA[place] == maxA[place]) {
             //Exit statement if last segment
             if(place == MILSEC_LOC) {
                 return true;
             }
-            return compare(maxA, timeA, ++place);
+            return compare(maxA, timeA, ++place, invert);
         }
         //If less, return true
         else {

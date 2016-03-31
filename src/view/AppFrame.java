@@ -24,11 +24,14 @@ public class AppFrame extends JFrame {
     private JTextPane output;
     private JTextPane spanOutput;
 
+    private JCheckBox bcEra;
+
     private JButton today;
     private JButton swap;
     private JButton clear;
     private JButton max;
     private JButton min;
+    private JButton zero;
     private JButton timer;
     private JButton stop;
 
@@ -61,6 +64,9 @@ public class AppFrame extends JFrame {
         spanOutput = new JTextPane();
         spanOutput.setEditable(false);
         spanOutput.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 0, Color.BLACK));
+
+        bcEra = new JCheckBox("BC");
+        bcEra.setActionCommand("era");
     }
     private void makeButtons() {
 
@@ -78,6 +84,9 @@ public class AppFrame extends JFrame {
 
         min = new JButton("Min");
         min.setActionCommand("min");
+
+        zero = new JButton("Zero");
+        zero.setActionCommand("zero");
 
         timer = new JButton("Timer");
         timer.setActionCommand("timer");
@@ -119,6 +128,10 @@ public class AppFrame extends JFrame {
         JPanel swapP = new JPanel();
         swapP.setLayout(new BoxLayout(swapP, BoxLayout.X_AXIS));
         swapP.add(new JPanel());
+        swapP.add(bcEra);
+        swapP.add(new JPanel());
+        swapP.add(new JPanel());
+        swapP.add(new JPanel());
         swapP.add(clear);
         swapP.add(swap);
         this.add(swapP);
@@ -141,6 +154,7 @@ public class AppFrame extends JFrame {
         extraP.add(today);
         extraP.add(max);
         extraP.add(min);
+        extraP.add(zero);
 
         extraP.add(new JPanel());
 
@@ -155,9 +169,11 @@ public class AppFrame extends JFrame {
         clear.addActionListener(al);
         max.addActionListener(al);
         min.addActionListener(al);
+        zero.addActionListener(al);
         timer.addActionListener(al);
         input.addActionListener(al);
         stop.addActionListener(al);
+        bcEra.addActionListener(al);
     }
     public void setInputKeyListener(KeyListener kl) {
         input.addKeyListener(kl);
@@ -184,8 +200,21 @@ public class AppFrame extends JFrame {
         clear.setEnabled(b);
         max.setEnabled(b);
         min.setEnabled(b);
+        zero.setEnabled(b);
         timer.setVisible(b);
         stop.setVisible(!b);
+    }
+
+    public boolean isBCSelected() {
+        return bcEra.isSelected();
+    }
+
+    public void setBCSelected(boolean b) {
+        bcEra.setSelected(b);
+    }
+
+    public void enableBCSelection(boolean b) {
+        bcEra.setEnabled(b);
     }
 
 }

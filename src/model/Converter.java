@@ -49,11 +49,13 @@ public class Converter {
      */
     public static String msToHumanSpan(long ms) {
         boolean neg = false;
+
+        //Check if negative and remove the sign
         if (ms < 0) {
             neg = true;
             ms = Math.abs(ms);
-
         }
+
         //Time measures in milliseconds
         long yearL = 31536000000L;
         long dayL = 86400000L;
@@ -74,6 +76,8 @@ public class Converter {
         long milliseconds = ms;
 
         String span = String.format("%dy %dd %02d:%02d:%02d,%03d",years, days, hours, minutes, seconds, milliseconds);
+
+        //Represent negative ms as negative span
         if(neg) {
             span = "-"+span;
         }
@@ -91,7 +95,7 @@ public class Converter {
     /**
      * Convert a formatted date string to epoch milliseconds
      * @param dateString dateString in format yyyy-MM-dd HH:mm:ss,SSS
-     * @param era time era (BCE, CE) as represented by int in
+     * @param era time era (BC, AD) as represented by int in
      * @return millisecond epoch representation of that date. Returns negative values on error
      * @throws ConvertParseException
      */
@@ -226,8 +230,9 @@ public class Converter {
     }
 
     /**
-     * Check if a date string value is within the maximum epoch value
+     * Check if a date string value is within the maximum and minimum epoch value
      * @param dateString formatted date string
+     * @param era which era the date corresponds to (BC 0, AD 1)
      * @return true if date string is less than the max epoch, otherwise false
      * @throws NumberFormatException
      */
@@ -244,6 +249,8 @@ public class Converter {
             maxA[4] = 47; //minute
             maxA[5] = 4; //second
             maxA[6] = 192; //ms
+            //If the year is the max year, check that the times are GREATER THAN than the max
+            //Else return that the year is LESS than the max
             if(timeA[0] == maxA[0]) {
                 return compare(maxA, timeA, 1, true);
             }
@@ -258,12 +265,9 @@ public class Converter {
             maxA[4] = 12; //minute
             maxA[5] = 55; //second
             maxA[6] = 807; //ms
+            //Check if the time is less the the max
             return compare(maxA, timeA, 0, false);
         }
-
-
-        //test max values with date values, returns true if less
-        //starts with testing the year, if == then test month etc
     }
 
 
@@ -276,6 +280,7 @@ public class Converter {
      * @param maxA value array which to check against
      * @param timeA value array to check
      * @param place which element of the array to check (this should be zero for the first call
+     * @param invert instead of checking if the values are less than the max, check they are greater than the max
      * @return true if timeA is less than maxA, otherwise false
      */
     private static boolean compare(long[] maxA, long[] timeA, int place, boolean invert) {

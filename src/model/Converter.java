@@ -103,6 +103,10 @@ public class Converter {
         long epoch;
         try {
             //pull out the numbers. This will force default values for missing elements
+            /* TODO this causes the delimiters to be reset, meaning invalid delimiters can be passed in
+                This will still parse the date but it allows putting in multiple delimiters next to each other
+                and putting different delims in different spots
+             */
             long[] a = dateStringToArray(dateString);
             //Put it back into a string. Now with default values if nothing was there before
             dateString = dateArrayToString(a);
@@ -173,7 +177,7 @@ public class Converter {
      * @return array representation of that date
      * @throws NumberFormatException
      */
-    private static long[] dateStringToArray(String date) throws NumberFormatException{
+    private static long[] dateStringToArray(String date) throws NumberFormatException {
         //order from biggest to smallest
         long[] ia = new long[NUM_TOTAL_FORMAT];
 
@@ -185,6 +189,7 @@ public class Converter {
             dateString = st.nextToken();
         }
         catch(NoSuchElementException nsee) {
+            //TODO this is no longer the case, investigate
             //No string at all. Should cause a format exception later
             dateString = "0"+DATE_DELIM+"0"+DATE_DELIM+"0";
         }
@@ -197,16 +202,19 @@ public class Converter {
         }
 
         //Split the date values
+        //TODO fix multiple delimiters being valid
         st = new StringTokenizer(dateString, DATE_DELIM);
         int i = 0;
         for( ; i < NUM_DATE_FORMAT; i++) {
             if(st.hasMoreTokens()) {
                 ia[i] = Long.parseLong(st.nextToken());
+                if(ia[i] < 0 ) throw new NumberFormatException("Date values cannot be negative");
             }
             else {
                 if(i == 0) {
+                    throw new NumberFormatException("Year must be set");
                     //default year to 1970
-                    ia[i] = 1970;
+//                    ia[i] = 1970;
                 }
                 else {
                     //If an element is missing, default it to 1 (Cannot be zero as 2014/0/0 makes no sense)
@@ -215,6 +223,7 @@ public class Converter {
             }
         }
         //Split the time values
+        //TODO fix multiple delimiters
         st = new StringTokenizer(timeString,TIME_DELIM.concat(MS_DELIM));
         for( ; i-NUM_DATE_FORMAT < NUM_TIME_FORMAT; i++) {
             if(st.hasMoreTokens()) {

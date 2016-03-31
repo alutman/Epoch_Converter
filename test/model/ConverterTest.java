@@ -72,6 +72,21 @@ public class ConverterTest {
         assert Converter.dateStringToEpoch("500-10-05", 0) == -77890672800000L;
     }
 
+    @org.junit.Test(expected=ConvertParseException.class)
+    public void empty_date_string() throws Exception {
+        Converter.dateStringToEpoch("", 0);
+    }
+
+    @org.junit.Test(expected=ConvertParseException.class)
+    public void minimal_date_string() throws Exception {
+        Converter.dateStringToEpoch("-", 0);
+    }
+
+    @org.junit.Test(expected=ConvertParseException.class)
+    public void date_string_with_negative_prefix() throws Exception {
+        Converter.dateStringToEpoch("-1234-10-20", 0);
+    }
+
     @org.junit.Test
     public void era_boundary() throws Exception {
         assert Converter.epochToDateString(-62135805600002L).equals("0001-12-31 23:59:59,998");
@@ -83,5 +98,53 @@ public class ConverterTest {
         assert Converter.epochToDateString(-62135805599999L).equals("0001-01-01 00:00:00,001");
         assert Converter.getEraFromEpoch(-62135805599999L) == GregorianCalendar.AD;
     }
+
+
+    @org.junit.Test(expected=ConvertParseException.class)
+    public void date_string_prefixed_delimiters() throws Exception {
+        Converter.dateStringToEpoch("--2016-06-2");
+    }
+
+    @org.junit.Test(expected=ConvertParseException.class)
+    public void date_string_extra_delimiters() throws Exception {
+        Converter.dateStringToEpoch("2016--06--2");
+    }
+
+    @org.junit.Test(expected=ConvertParseException.class)
+    public void date_string_trailing_delimiters() throws Exception {
+        Converter.dateStringToEpoch("2016-06-2-");
+    }
+
+    @org.junit.Test(expected=ConvertParseException.class)
+    public void date_string_bad_data_extra_delim() throws Exception {
+        Converter.dateStringToEpoch("2016-10-22-dddd", 0);
+    }
+
+
+    @org.junit.Test(expected=ConvertParseException.class)
+    public void time_string_swapped_delim() throws Exception {
+        Converter.dateStringToEpoch("2016-10-22 12,30,10:123", 0);
+    }
+
+    @org.junit.Test(expected=ConvertParseException.class)
+    public void time_string_extra_delim() throws Exception {
+        Converter.dateStringToEpoch("2016-10-22 12::30::10,,,123", 0);
+    }
+    @org.junit.Test(expected=ConvertParseException.class)
+    public void time_string_prefixed_delim() throws Exception {
+        Converter.dateStringToEpoch("2016-10-22 :,12:30:10,123", 0);
+    }
+    @org.junit.Test(expected=ConvertParseException.class)
+    public void time_string_trailing_delim() throws Exception {
+        Converter.dateStringToEpoch("2016-10-22 12:30:10,123,:,", 0);
+    }
+
+    @org.junit.Test(expected=ConvertParseException.class)
+    public void time_string_bad_data_extra_delim() throws Exception {
+        Converter.dateStringToEpoch("2016-10-22 12:30:10,123,asdjkdas", 0);
+    }
+
+
+
 
 }

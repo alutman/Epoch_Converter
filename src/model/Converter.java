@@ -20,18 +20,23 @@ public class Converter {
     public static final String SEPARATOR_DELIM = " ";
     public static final String DATE_FORMAT = "yyyy"+DATE_DELIM+"MM"+DATE_DELIM+"dd"+SEPARATOR_DELIM+"HH"+TIME_DELIM+"mm"+TIME_DELIM+"ss"+MS_DELIM+"SSS";
 
-    //Ordered largest to smallest time segments
-    private static final int YEAR_LOC = 0;
-    private static final int MONTH_LOC = 1;
-    private static final int DAY_LOC = 2;
-    private static final int HOUR_LOC = 3;
-    private static final int MINUTE_LOC = 4;
-    private static final int SECOND_LOC = 5;
-    private static final int MILSEC_LOC = 6;
+    //Ordered largest to smallest time segments for DateArray conversion
+    private static final int DA_YEAR_LOC = 0;
+    private static final int DA_MONTH_LOC = 1;
+    private static final int DA_DAY_LOC = 2;
+    private static final int DA_HOUR_LOC = 3;
+    private static final int DA_MINUTE_LOC = 4;
+    private static final int DA_SECOND_LOC = 5;
+    private static final int DA_MILSEC_LOC = 6;
 
-    private static final int NUM_DATE_FORMAT = 3;
-    private static final int NUM_TIME_FORMAT = 4;
-    private static final int NUM_TOTAL_FORMAT = 7;
+    private static final int DA_DATE_SEG_LEN = 3;
+    private static final int DA_TIME_SEG_LEN = 4;
+    private static final int DA_TOTAL_LEN = 7;
+
+    private static final int DELIMITER_OFFSET = 2;
+    private static final int DATE_STRING_TOKENS = 5;
+    private static final int TIME_STRING_TOKENS = 7;
+
 
     /**
      * Current epoch value in milliseconds
@@ -103,19 +108,20 @@ public class Converter {
         long epoch;
         try {
             //pull out the numbers. This will force default values for missing elements
-            /* TODO this causes the delimiters to be reset, meaning invalid delimiters can be passed in
-                This will still parse the date but it allows putting in multiple delimiters next to each other
-                and putting different delims in different spots
-             */
-            long[] a = dateStringToArray(dateString);
+            long[] dateArray = dateStringToArray(dateString);
             //Put it back into a string. Now with default values if nothing was there before
-            dateString = dateArrayToString(a);
-            if(!isDateStringWithinEpoch(dateString, era)) throw new ConvertRangeException("Date is outside epoch time range");
+            dateString = dateArrayToString(dateArray);
+
+            //Dates outside the max/min value for epoch LONG values will still be parsed successfully but will overflow
+            //giving weird values. Check the value here and fail early instead
+            if(!isDateArrayWithinEpoch(dateArray, era)) throw new ConvertRangeException("Date is outside epoch time range");
 
             DateFormat df = new SimpleDateFormat(DATE_FORMAT);
-            //Adhere to num days in month, max hour time etc rules
+            //Don't be lenient. Adhere to rules specifying the number of days in each month, months in year, etc
             df.setLenient(false);
             Date sdf = df.parse(dateString);
+
+            //Set the era before interpreting the millsecond value
             gCal.setTime(sdf);
             gCal.set(Calendar.ERA, era);
             epoch = gCal.getTimeInMillis();
@@ -125,9 +131,9 @@ public class Converter {
             //or invalid month/day number. eg 21/52/2010, 30/02/2010
             throw new ConvertParseException("Date must be in "+Converter.DATE_FORMAT+" format", pe);
         }
-        catch(NumberFormatException nfe) {
+        catch(NumberFormatException | DateFormatException e) {
             //something else wrong with the format
-            throw new ConvertParseException(nfe.getMessage(), nfe);
+            throw new ConvertParseException(e.getMessage(), e);
         }
         return epoch;
     }
@@ -154,32 +160,32 @@ public class Converter {
     private static String dateArrayToString(long[] values) {
         StringBuilder sb = new StringBuilder();
         //Date values
-        sb.append(values[YEAR_LOC]);
+        sb.append(values[DA_YEAR_LOC]);
         sb.append(DATE_DELIM);
-        sb.append(values[MONTH_LOC]);
+        sb.append(values[DA_MONTH_LOC]);
         sb.append(DATE_DELIM);
-        sb.append(values[DAY_LOC]);
+        sb.append(values[DA_DAY_LOC]);
         sb.append(SEPARATOR_DELIM);
         //Time values
-        sb.append(values[HOUR_LOC]);
+        sb.append(values[DA_HOUR_LOC]);
         sb.append(TIME_DELIM);
-        sb.append(values[MINUTE_LOC]);
+        sb.append(values[DA_MINUTE_LOC]);
         sb.append(TIME_DELIM);
-        sb.append(values[SECOND_LOC]);
+        sb.append(values[DA_SECOND_LOC]);
         sb.append(MS_DELIM);
-        sb.append(values[MILSEC_LOC]);
+        sb.append(values[DA_MILSEC_LOC]);
         return sb.toString();
     }
 
     /**
-     * Converts a formatted string to an array of date values
+     * Converts a formatted string to an array of date values, setting defaults if the smaller values are missing
      * @param date string formatted date
      * @return array representation of that date
-     * @throws NumberFormatException
+     * @throws NumberFormatException DateFormatException
      */
-    private static long[] dateStringToArray(String date) throws NumberFormatException {
+    private static long[] dateStringToArray(String date) throws NumberFormatException, DateFormatException {
         //order from biggest to smallest
-        long[] ia = new long[NUM_TOTAL_FORMAT];
+        long[] ia = new long[DA_TOTAL_LEN];
 
         //Split into time and date
         StringTokenizer st = new StringTokenizer(date,SEPARATOR_DELIM);
@@ -189,7 +195,6 @@ public class Converter {
             dateString = st.nextToken();
         }
         catch(NoSuchElementException nsee) {
-            //TODO this is no longer the case, investigate
             //No string at all. Should cause a format exception later
             dateString = "0"+DATE_DELIM+"0"+DATE_DELIM+"0";
         }
@@ -201,53 +206,107 @@ public class Converter {
             timeString = "0"+TIME_DELIM+"0"+TIME_DELIM+"0"+MS_DELIM+"000";
         }
 
-        //Split the date values
-        //TODO fix multiple delimiters being valid
-        st = new StringTokenizer(dateString, DATE_DELIM);
+        //TODO Simplify the split sections
+
+        /* SPLIT DATE STRING VALUES INTO ARRAY */
+
+        //Split date array on -
+        st = new StringTokenizer(dateString, DATE_DELIM, true);
         int i = 0;
-        for( ; i < NUM_DATE_FORMAT; i++) {
-            if(st.hasMoreTokens()) {
-                ia[i] = Long.parseLong(st.nextToken());
-                if(ia[i] < 0 ) throw new NumberFormatException("Date values cannot be negative");
-            }
-            else {
-                if(i == 0) {
-                    throw new NumberFormatException("Year must be set");
-                    //default year to 1970
-//                    ia[i] = 1970;
-                }
-                else {
-                    //If an element is missing, default it to 1 (Cannot be zero as 2014/0/0 makes no sense)
-                    ia[i] = 1;
-                }
+
+        //Shouldn't ever have more than the expected tokens
+        if(st.countTokens() > DATE_STRING_TOKENS) throw new DateFormatException("Invalid date format");
+
+        //For each delimiter and value in the date portion of the string
+        for( ; i < DATE_STRING_TOKENS; i++) {
+            switch(i) {
+                case 0: //year
+                    //The first element should be the year, if there are no tokens for it, fail.
+                    if(!st.hasMoreTokens()) {
+                        throw new DateFormatException("Year must be set");
+                    }
+                case 2: // month location in the tokenized string
+                case 4: // day location in the tokenized string
+                    if(st.hasMoreTokens()) {
+                        //Yes there is a value for the year/month/day, convert to number and put into array
+
+                        // DELIMITER OFFSET converts the data position in the token array to the real position in the date array
+                        ia[i/DELIMITER_OFFSET] = Long.parseLong(st.nextToken());
+                        if(ia[i/DELIMITER_OFFSET] < 0 ) throw new NumberFormatException("Date values cannot be negative");
+                    }
+                    else {
+                        //No there isn't a value present, set it to the default of 1
+                        ia[i/DELIMITER_OFFSET] = 1;
+                    }
+                    break;
+                default: //Delimiters will end up here
+                    //Just consume and move on
+                    if(st.hasMoreTokens()) {
+                        st.nextToken();
+                    }
             }
         }
-        //Split the time values
-        //TODO fix multiple delimiters
-        st = new StringTokenizer(timeString,TIME_DELIM.concat(MS_DELIM));
-        for( ; i-NUM_DATE_FORMAT < NUM_TIME_FORMAT; i++) {
-            if(st.hasMoreTokens()) {
-                ia[i] = Long.parseLong(st.nextToken());
-            }
-            else {
-                //Missing element default to 0. Time can be zero (midnight)
-                ia[i] = 0;
+
+        /* SPLIT TIME STRING VALUES INTO ARRAY */
+
+        //Split the time array on : and ,
+        st = new StringTokenizer(timeString,TIME_DELIM.concat(MS_DELIM), true);
+
+        //Shouldn't ever have more than the expected tokens
+        if(st.countTokens() > TIME_STRING_TOKENS) throw new DateFormatException("Invalid time format");
+        for( i = 0 ; i < TIME_STRING_TOKENS; i++) {
+            switch(i) {
+                case 1:// ':' delimiter
+                case 3:// second ':' delimiter
+                    if(st.hasMoreTokens()) {
+                        //assert that the first and second delimiters are ':'
+                        if (!st.nextToken().equals(TIME_DELIM)) throw new DateFormatException("Invalid time delimiter");
+                    }
+                    break;
+                case 5: // ',' delimiter
+                    if(st.hasMoreTokens()) {
+                        //asser that the final delimiter is ','
+                        if (!st.nextToken().equals(MS_DELIM)) throw new DateFormatException("Invalid MS delimiter");
+                    }
+                    break;
+                case 0: //hour location in the tokenized string
+                case 2: //minute location in the tokenized string
+                case 4: //second location in the tokenized string
+                case 6: //ms location in the tokenized string
+                    if(st.hasMoreTokens()) {
+                        //Yes there is a value for one of the time elements, convert and add to array
+
+                        //DELIMITER_OFFSET factors in the amount of delimiters in the data array and DA_DATE_SEG_LEN
+                        //factors in the date elements already entered. This ensures the time data gets placed in the correct part of the date array
+                        ia[i / DELIMITER_OFFSET + DA_DATE_SEG_LEN] = Long.parseLong(st.nextToken());
+                        if (ia[i / DELIMITER_OFFSET + DA_DATE_SEG_LEN] < 0) throw new NumberFormatException("Date values cannot be negative");
+                    }
+                    else {
+                        //No data present, set the default value of 0
+                        ia [i / DELIMITER_OFFSET  + DA_DATE_SEG_LEN] = 0;
+                    }
+                    break;
+                default:
+                    //For safety, shouldn't ever fire
+                    if(st.hasMoreTokens()) {
+                        st.nextToken();
+                    }
             }
         }
 
         return ia;
     }
 
+
     /**
-     * Check if a date string value is within the maximum and minimum epoch value
-     * @param dateString formatted date string
+     * Check if a date array  value is within the maximum and minimum epoch value
+     * @param dateArray date array
      * @param era which era the date corresponds to (BC 0, AD 1)
      * @return true if date string is less than the max epoch, otherwise false
      * @throws NumberFormatException
      */
-    private static boolean isDateStringWithinEpoch(String dateString, int era) throws NumberFormatException {
-        long[] maxA = new long[NUM_TOTAL_FORMAT];
-        long[] timeA = dateStringToArray(dateString);
+    private static boolean isDateArrayWithinEpoch(long[] dateArray, int era) throws NumberFormatException, DateFormatException {
+        long[] maxA = new long[DA_TOTAL_LEN];
         if (era == GregorianCalendar.BC) {
             //minimum values
             //292269055-12-03 02:47:04,192
@@ -260,10 +319,10 @@ public class Converter {
             maxA[6] = 192; //ms
             //If the year is the max year, check that the times are GREATER THAN than the max
             //Else return that the year is LESS than the max
-            if(timeA[0] == maxA[0]) {
-                return compare(maxA, timeA, 1, true);
+            if(dateArray[0] == maxA[0]) {
+                return compare(maxA, dateArray, 1, true);
             }
-            else return timeA[0] < maxA[0];
+            else return dateArray[0] < maxA[0];
         } else {
             //maximum values
             //292278994-08-17 17:12:55,807
@@ -275,7 +334,7 @@ public class Converter {
             maxA[5] = 55; //second
             maxA[6] = 807; //ms
             //Check if the time is less the the max
-            return compare(maxA, timeA, 0, false);
+            return compare(maxA, dateArray, 0, false);
         }
     }
 
@@ -308,7 +367,7 @@ public class Converter {
         //if equal, check the next date segment.
         if(timeA[place] == maxA[place]) {
             //Exit statement if last segment
-            if(place == MILSEC_LOC) {
+            if(place == DA_MILSEC_LOC) {
                 return true;
             }
             return compare(maxA, timeA, ++place, invert);

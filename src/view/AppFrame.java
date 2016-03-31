@@ -66,6 +66,7 @@ public class AppFrame extends JFrame {
         spanOutput.setBorder(BorderFactory.createMatteBorder(1, 1, 1, 0, Color.BLACK));
 
         bcEra = new JCheckBox("BC");
+        bcEra.setEnabled(false);
         bcEra.setActionCommand("era");
     }
     private void makeButtons() {

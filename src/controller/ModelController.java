@@ -57,10 +57,13 @@ public class ModelController implements KeyListener, ActionListener {
         }
     }
 
+    private boolean convertSuccessful = false;
+
     /**
      * Read the input field and calculate the appropriate outputs
      */
     public void updateGUI() {
+        convertSuccessful = false;
         String in = appFrame.getInputText();
         long epoch = -1;
         String date;
@@ -77,7 +80,7 @@ public class ModelController implements KeyListener, ActionListener {
                 appFrame.setSpanOutputText(null);
                 return;
             }
-            //Has alphabetical characters, probably a date
+            //Has non numerical characters, probably a date
             isInt = false;
         }
         if(isInt) {
@@ -86,6 +89,7 @@ public class ModelController implements KeyListener, ActionListener {
             setEra(Converter.getEraFromEpoch(epoch));
             appFrame.setOutputText(date);
             appFrame.setSpanOutputText(Converter.msToHumanSpan(epoch));
+            convertSuccessful = true;
         }
         else {
             try {
@@ -93,6 +97,7 @@ public class ModelController implements KeyListener, ActionListener {
                 epoch = Converter.dateStringToEpoch(in, getEra());
                 appFrame.setOutputText(epoch+"");
                 appFrame.setSpanOutputText(Converter.msToHumanSpan(epoch));
+                convertSuccessful = true;
             } catch (ConvertParseException e) {
                 appFrame.setOutputText("Date must be in "+Converter.DATE_FORMAT+" format");
                 appFrame.setSpanOutputText(null);
@@ -153,8 +158,11 @@ public class ModelController implements KeyListener, ActionListener {
                 appFrame.setSpanOutputText(null);
                 break;
             case "swap":
-                appFrame.setInputText(appFrame.getOutputText());
-                updateGUI();
+                if(convertSuccessful) {
+                    // Only swap if there is valid data to swap with
+                    appFrame.setInputText(appFrame.getOutputText());
+                    updateGUI();
+                }
                 break;
             case "today":
                 appFrame.setInputText(Converter.getEpoch() + "");

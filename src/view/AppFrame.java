@@ -37,11 +37,11 @@ public class AppFrame extends JFrame {
     private JButton stop;
 
     private Color JAVA_DEFAULT_GRAY = new Color(240,240,240);
-    private Font FONT = new Font("Monospaced", Font.PLAIN,14);
+    private Font FONT = new Font("Monospaced", Font.PLAIN, DPIController.scaleToDPI(14));
 
     public AppFrame() {
         //Frame settings
-        this.setSize(500,200);
+        this.setSize(DPIController.scaleToDPI(500) ,DPIController.scaleToDPI(200));
         this.setResizable(false);
         this.setLocationRelativeTo(null);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -125,19 +125,19 @@ public class AppFrame extends JFrame {
         inputText.setFont(FONT);
         inputText.setText(String.format("%10s","Input"));
         inputText.setEditable(false);
-        inputText.setMaximumSize(new Dimension(50, 50));
+        inputText.setMaximumSize(new Dimension(DPIController.scaleToDPI(50), DPIController.scaleToDPI(50)));
         inputText.setBackground(JAVA_DEFAULT_GRAY);
         outputText = new JTextPane();
         outputText.setFont(FONT);
         outputText.setText(String.format("%10s", "Output"));
         outputText.setEditable(false);
-        outputText.setMaximumSize(new Dimension(50, 50));
+        outputText.setMaximumSize(new Dimension(DPIController.scaleToDPI(50), DPIController.scaleToDPI(50)));
         outputText.setBackground(JAVA_DEFAULT_GRAY);
         spanOutputText = new JTextPane();
         spanOutputText.setFont(FONT);
         spanOutputText.setText(String.format("%10s", "Timespan"));
         spanOutputText.setEditable(false);
-        spanOutputText.setMaximumSize(new Dimension(50, 50));
+        spanOutputText.setMaximumSize(new Dimension(DPIController.scaleToDPI(50), DPIController.scaleToDPI(50)));
         spanOutputText.setBackground(JAVA_DEFAULT_GRAY);
     }
     private void makeLayout() {
